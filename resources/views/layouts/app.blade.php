@@ -26,6 +26,9 @@
                                 {{ Auth::user()->name }}
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" href="{{ route('dashboard') }}">الرئيسية</a></li>
+                                <li><a class="dropdown-item" href="{{ route('robot.dashboard') }}">تحكم الروبوت</a></li>
+                                <li><a class="dropdown-item" href="{{ route('patients.index') }}">إدارة المرضى</a></li>
                                 <li><a class="dropdown-item" href="{{ route('profile') }}">الملف الشخصي</a></li>
                                 <li><a class="dropdown-item" href="{{ route('profile.edit') }}">تعديل الملف الشخصي</a></li>
                                 <li><form method="POST" action="{{ route('logout') }}">@csrf<button class="dropdown-item" type="submit">تسجيل الخروج</button></form></li>

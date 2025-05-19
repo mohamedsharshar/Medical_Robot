@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\RobotController;
+use App\Http\Controllers\PatientController;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -19,3 +21,9 @@ Route::post('/profile/update-image', [AuthController::class, 'updateProfileImage
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware('auth')->name('dashboard');
+
+Route::get('/robot', [RobotController::class, 'dashboard'])->middleware('auth')->name('robot.dashboard');
+Route::post('/robot/command', [RobotController::class, 'sendCommand'])->middleware('auth');
+Route::get('/robot/live', [RobotController::class, 'liveData'])->middleware('auth');
+
+Route::resource('patients', PatientController::class)->middleware('auth');
