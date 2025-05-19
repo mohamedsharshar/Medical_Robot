@@ -60,6 +60,75 @@
             </div>
         </div>
     </div>
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow border-0">
+                <div class="card-header bg-gradient bg-warning text-dark d-flex align-items-center">
+                    <i class="fas fa-stethoscope fa-lg me-2"></i> آخر تشخيص للمريض
+                </div>
+                <div class="card-body">
+                    <div id="last-diagnosis-view">
+                        <span class="text-muted">لا يوجد تشخيص بعد. استخدم أداة التشخيص بالأسفل.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow border-0">
+                <div class="card-header bg-gradient bg-warning text-dark d-flex align-items-center">
+                    <i class="fas fa-stethoscope fa-lg me-2"></i> تشخيص المريض بعد الفحص
+                </div>
+                <div class="card-body" id="diagnosis-section">
+                    <form id="diagnosis-form" class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label">درجة الحرارة (NTC)</label>
+                            <input type="number" step="0.1" min="20" max="45" class="form-control" id="input-temp" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">معدل ضربات القلب (BPM)</label>
+                            <input type="number" step="1" min="30" max="200" class="form-control" id="input-bpm" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">المسافة (سم)</label>
+                            <input type="number" step="1" min="0" max="100" class="form-control" id="input-ultrasonic" required>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-warning w-100"><i class="fas fa-search"></i> شخّص الآن</button>
+                        </div>
+                    </form>
+                    <div id="diagnosis-result" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4" id="diagnosis-cards-row"></div>
+    <div class="row mt-4">
+        @foreach($diagnoses as $diagnosis)
+            <div class="col-md-4 mb-4">
+                <div class="card diagnosis-card animate__animated animate__fadeInUp shadow border-0">
+                    <div class="card-header bg-gradient bg-info text-white d-flex align-items-center">
+                        <i class="fas fa-notes-medical fa-lg me-2"></i> تشخيص رقم #{{ $diagnosis->id }}
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <img src="https://cdn-icons-png.flaticon.com/512/2965/2965567.png" width="40" class="me-2" alt="تشخيص">
+                            <div>
+                                <div><b>درجة الحرارة:</b> <span class="badge bg-primary">{{ $diagnosis->ntc_temp }} °C</span></div>
+                                <div><b>النبض:</b> <span class="badge bg-danger">{{ $diagnosis->bpm }} BPM</span></div>
+                                <div><b>المسافة:</b> <span class="badge bg-info">{{ $diagnosis->ultrasonic }} سم</span></div>
+                            </div>
+                        </div>
+                        <div class="diagnosis-result-html">{!! $diagnosis->result !!}</div>
+                    </div>
+                    <div class="card-footer text-end small text-muted">
+                        <i class="fas fa-clock"></i> {{ $diagnosis->created_at->diffForHumans() }}
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
     <div id="robot-alerts" class="mt-3"></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
@@ -113,8 +182,80 @@ function showAlert(msg, type) {
     el.innerHTML = `<div class='alert alert-${type}'>${msg}</div>`;
     setTimeout(()=>{el.innerHTML='';}, 3000);
 }
-setInterval(loadLiveData, 3000);
-setInterval(loadCommands, 4000);
-window.onload = function() { loadLiveData(); loadCommands(); };
+document.getElementById('diagnosis-form').onsubmit = function(e) {
+    e.preventDefault();
+    const temp = parseFloat(document.getElementById('input-temp').value);
+    const bpm = parseInt(document.getElementById('input-bpm').value);
+    const ultrasonic = parseInt(document.getElementById('input-ultrasonic').value);
+    let result = '';
+    if (temp > 38) {
+        result += '<div class="alert alert-danger animate__animated animate__shakeX"><i class="fas fa-temperature-high"></i> ارتفاع في درجة الحرارة (احتمال حمى)</div>';
+    } else if (temp < 35) {
+        result += '<div class="alert alert-warning animate__animated animate__shakeX"><i class="fas fa-temperature-low"></i> انخفاض في درجة الحرارة (احتمال هبوط)</div>';
+    } else {
+        result += '<div class="alert alert-success animate__animated animate__pulse"><i class="fas fa-thermometer-half"></i> درجة الحرارة طبيعية</div>';
+    }
+    if (bpm > 100) {
+        result += '<div class="alert alert-danger animate__animated animate__shakeX"><i class="fas fa-heart-broken"></i> معدل ضربات القلب مرتفع (احتمال إجهاد/قلق)</div>';
+    } else if (bpm < 60) {
+        result += '<div class="alert alert-warning animate__animated animate__shakeX"><i class="fas fa-heart"></i> معدل ضربات القلب منخفض (احتمال هبوط/إعياء)</div>';
+    } else {
+        result += '<div class="alert alert-success animate__animated animate__pulse"><i class="fas fa-heartbeat"></i> معدل ضربات القلب طبيعي</div>';
+    }
+    if (ultrasonic < 20) {
+        result += '<div class="alert alert-info animate__animated animate__fadeIn"><i class="fas fa-user-check"></i> المريض قريب من الروبوت (جاهز للفحص أو التفاعل)</div>';
+    } else {
+        result += '<div class="alert alert-secondary animate__animated animate__fadeIn"><i class="fas fa-user-clock"></i> المريض بعيد عن الروبوت</div>';
+    }
+    document.getElementById('diagnosis-result').innerHTML = result;
+    document.getElementById('last-diagnosis-view').innerHTML = result;
+    // حفظ التشخيص في قاعدة البيانات
+    fetch('/robot/diagnosis', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ntc_temp: temp, bpm: bpm, ultrasonic: ultrasonic, result: result})
+    });
+    // تحديث الكروت بعد الحفظ
+    setTimeout(loadDiagnoses, 500);
+};
+function loadDiagnoses() {
+    fetch('/robot/diagnoses')
+        .then(res => res.json())
+        .then(data => {
+            let html = '';
+            data.forEach(function(diagnosis) {
+                html += `<div class='col-md-4 mb-4'>
+                    <div class='card diagnosis-card animate__animated animate__fadeInUp shadow border-0'>
+                        <div class='card-header bg-gradient bg-info text-white d-flex align-items-center'>
+                            <i class='fas fa-notes-medical fa-lg me-2'></i> تشخيص رقم #${diagnosis.id}
+                        </div>
+                        <div class='card-body'>
+                            <div class='d-flex align-items-center mb-2'>
+                                <img src='https://cdn-icons-png.flaticon.com/512/2965/2965567.png' width='40' class='me-2' alt='تشخيص'>
+                                <div>
+                                    <div><b>درجة الحرارة:</b> <span class='badge bg-primary'>${diagnosis.ntc_temp} °C</span></div>
+                                    <div><b>النبض:</b> <span class='badge bg-danger'>${diagnosis.bpm} BPM</span></div>
+                                    <div><b>المسافة:</b> <span class='badge bg-info'>${diagnosis.ultrasonic} سم</span></div>
+                                </div>
+                            </div>
+                            <div class='diagnosis-result-html'>${diagnosis.result}</div>
+                        </div>
+                        <div class='card-footer text-end small text-muted'>
+                            <i class='fas fa-clock'></i> ${new Date(diagnosis.created_at).toLocaleString('ar-EG')}
+                        </div>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('diagnosis-cards-row').innerHTML = html;
+        });
+}
+window.onload = function() {
+    loadLiveData();
+    loadCommands();
+    loadDiagnoses();
+};
 </script>
 @endsection

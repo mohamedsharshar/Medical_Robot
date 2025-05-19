@@ -25,5 +25,7 @@ Route::get('/dashboard', function () {
 Route::get('/robot', [RobotController::class, 'dashboard'])->middleware('auth')->name('robot.dashboard');
 Route::post('/robot/command', [RobotController::class, 'sendCommand'])->middleware('auth');
 Route::get('/robot/live', [RobotController::class, 'liveData'])->middleware('auth');
+Route::post('/robot/diagnosis', [RobotController::class, 'storeDiagnosis'])->middleware('auth');
+Route::get('/robot/diagnoses', [RobotController::class, 'getDiagnoses'])->middleware('auth');
 
 Route::resource('patients', PatientController::class)->middleware('auth');

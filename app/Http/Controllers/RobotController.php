@@ -6,12 +6,14 @@ use Illuminate\Http\Request;
 use App\Models\RobotCommand;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use App\Models\Diagnosis;
 
 class RobotController extends Controller
 {
     public function dashboard()
     {
-        return view('robot.dashboard');
+        $diagnoses = Diagnosis::where('user_id', auth()->id())->latest()->take(6)->get();
+        return view('robot.dashboard', compact('diagnoses'));
     }
 
     public function sendCommand(Request $request)
@@ -40,5 +42,29 @@ class RobotController extends Controller
             'camera' => 'https://placehold.co/320x180?text=Camera+Feed',
             'last_command' => RobotCommand::latest()->first(),
         ]);
+    }
+
+    public function storeDiagnosis(Request $request)
+    {
+        $request->validate([
+            'ntc_temp' => 'required|numeric',
+            'bpm' => 'required|integer',
+            'ultrasonic' => 'required|integer',
+            'result' => 'required|string',
+        ]);
+        Diagnosis::create([
+            'user_id' => auth()->id(),
+            'ntc_temp' => $request->ntc_temp,
+            'bpm' => $request->bpm,
+            'ultrasonic' => $request->ultrasonic,
+            'result' => $request->result,
+        ]);
+        return response()->json(['success' => true]);
+    }
+
+    public function getDiagnoses()
+    {
+        $diagnoses = Diagnosis::where('user_id', auth()->id())->latest()->take(6)->get();
+        return response()->json($diagnoses);
     }
 }
